@@ -1,3 +1,5 @@
+  TikTok Profile Scraper
+
 TikTok Profile Scraper
 ======================
 
@@ -6,10 +8,10 @@ This project is a scraper for TikTok profiles, developed with Node.js and TypeSc
 Features
 --------
 
-*   **Profile Information Collection**: Retrieves the follower count of a TikTok profile.
-*   **Video Details**: Extracts information about posted videos, including views, likes, comments, and saves.
-*   **Simulated Interaction**: Simulates user interaction with the page to avoid bot detection.
-*   **Captcha Handling**: Uses the reCAPTCHA plugin to handle captchas automatically.
+*   **Profile Information Collection:** Retrieves the follower count of a TikTok profile.
+*   **Video Details:** Extracts information about posted videos, including views, likes, comments, and saves.
+*   **Simulated Interaction:** Simulates user interaction with the page to avoid bot detection.
+*   **Captcha Handling:** Uses the reCAPTCHA plugin to handle captchas automatically.
 
 Requirements
 ------------
@@ -28,6 +30,7 @@ Clone the repository and install the dependencies:
     git clone https://github.com/leonnardom/tiktok-scrapper.git
     cd tiktok-scrapper
     npm install
+        
 
 Running the Project
 -------------------
@@ -35,10 +38,12 @@ Running the Project
 To run the project directly in TypeScript, use the following command:
 
     npx ts-node src/index.ts
+        
 
 For a development environment with automatic reloading, install `ts-node-dev` and run:
 
     npm run dev
+        
 
 Available Scripts
 -----------------
@@ -54,8 +59,32 @@ Send a POST request to the `/scrape` endpoint with a JSON body containing the Ti
     {
       "url": "https://www.tiktok.com/@username"
     }
+        
 
-The response will include the total counts of views, likes, comments, and followers.
+### Example Request
+
+    POST http://localhost:3000/scrape
+    Content-Type: application/json
+    
+    {
+      "url": "https://www.tiktok.com/@username"
+    }
+        
+
+### Example Response
+
+    {
+      "success": true,
+      "data": {
+        "views": 1234567,
+        "likes": 234567,
+        "comments": 34567,
+        "followers": 890123
+      }
+    }
+        
+
+The response will include the total counts of views, likes, comments, and followers for the specified TikTok profile.
 
 Contributing
 ------------
