@@ -1,5 +1,3 @@
-  TikTok Profile Scraper
-
 TikTok Profile Scraper
 ======================
 
@@ -27,8 +25,8 @@ Installation
 
 Clone the repository and install the dependencies:
 
-    git clone https://github.com/your-username/repository-name.git
-    cd repository-name
+    git clone https://github.com/leonnardom/tiktok-scrapper.git
+    cd tiktok-scrapper
     npm install
 
 Running the Project
