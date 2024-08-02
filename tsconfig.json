@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "ES6", // Versão do JavaScript alvo
+    "target": "ES2017", // Versão do JavaScript alvo
     "module": "commonjs", // Módulo CommonJS para Node.js
     "outDir": "./dist", // Pasta de saída para arquivos compilados
     "rootDir": "./src", // Pasta raiz dos arquivos TypeScript
