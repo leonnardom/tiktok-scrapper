@@ -31,16 +31,6 @@ async function simulateHumanInteraction(page: Page) {
   await page.waitForTimeout(2000);
 }
 
-function parseNumber(numberString: string): number {
-  let number = parseFloat(numberString.replace(/,/g, ''));
-  if (numberString.includes('k') || numberString.includes('K')) {
-    number *= 1000;
-  } else if (numberString.includes('M')) {
-    number *= 1000000;
-  }
-  return isNaN(number) ? 0 : Math.round(number);
-}
-
 async function getTikTokProfileInfo(
   username: string
 ): Promise<{ videos: VideoInfo[]; followers: number }> {
@@ -49,7 +39,7 @@ async function getTikTokProfileInfo(
     RecaptchaPlugin({
       provider: {
         id: '2captcha',
-        token: '5325b7f39b2910d44f5e6a4c6ad6b1bf'
+        token: process.env.RECAPTCHA_TOKEN || ''
       },
       visualFeedback: true
     })
@@ -73,15 +63,7 @@ async function getTikTokProfileInfo(
     await page.waitForTimeout(5000);
 
     const followerSelector = 'strong[data-e2e="followers-count"]';
-    try {
-      await page.waitForSelector(followerSelector, { timeout: 120000 });
-    } catch (error) {
-      console.error(
-        'Follower selector not found within the timeout period:',
-        error
-      );
-      return { videos: [], followers: 0 };
-    }
+    await page.waitForSelector(followerSelector, { timeout: 120000 });
 
     const followers = await page.evaluate((selector: string) => {
       const parseNumber = (numberString: string): number => {
@@ -100,15 +82,7 @@ async function getTikTokProfileInfo(
     }, followerSelector);
 
     const videoSelector = "div[data-e2e='user-post-item']";
-    try {
-      await page.waitForSelector(videoSelector, { timeout: 120000 });
-    } catch (error) {
-      console.error(
-        'Video selector not found within the timeout period:',
-        error
-      );
-      return { videos: [], followers };
-    }
+    await page.waitForSelector(videoSelector, { timeout: 120000 });
 
     const videoData: VideoInfo[] = await page.evaluate((selector: string) => {
       const parseNumber = (numberString: string): number => {
@@ -140,7 +114,7 @@ async function getTikTokProfileInfo(
       return data;
     }, videoSelector);
 
-    for (const video of videoData) {
+    for (const video of videoData.slice(0, 5)) {
       try {
         await page.goto(video.link || '', {
           waitUntil: 'networkidle2',
@@ -152,7 +126,7 @@ async function getTikTokProfileInfo(
         const likesSelector = 'strong[data-e2e="like-count"]';
         const commentsSelector = 'strong[data-e2e="comment-count"]';
         const savesSelector = 'strong[data-e2e="favorite-count"]';
-        const descriptionSelector = 'div[data-e2e="video-description"]'; // Atualize o seletor conforme necessário
+        const descriptionSelector = 'h1[data-e2e="browse-video-desc"]';
 
         const likes = await page.evaluate(likesSelector => {
           const parseNumber = (numberString: string): number => {
