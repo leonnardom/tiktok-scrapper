@@ -13,16 +13,23 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(bodyParser.json());
 
+interface Comment {
+  author: string;
+  comment: string;
+}
+
 interface VideoInfo {
+  id: string;
   views: number;
   likes: number;
   comments: number;
   saves: number;
   link?: string;
   description?: string;
+  commentsArray?: Comment[];
 }
 
-async function simulateHumanInteraction(page: Page) {
+async function simulateHumanInteraction(page: Page): Promise<void> {
   await page.mouse.move(100, 100);
   await page.waitForTimeout(2000);
   await page.mouse.move(200, 200);
@@ -31,11 +38,30 @@ async function simulateHumanInteraction(page: Page) {
   await page.waitForTimeout(2000);
 }
 
+async function autoScrollToEnd(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    await new Promise<void>(resolve => {
+      let totalHeight = 0;
+      const distance = 100;
+      const timer = setInterval(() => {
+        const scrollHeight = document.body.scrollHeight;
+        window.scrollBy(0, distance);
+        totalHeight += distance;
+
+        if (totalHeight >= scrollHeight) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 100);
+    });
+  });
+}
+
 async function getTikTokProfileInfo(
   username: string
 ): Promise<{ videos: VideoInfo[]; followers: number }> {
-  await puppeteer.use(Stealth());
-  await puppeteer.use(
+  puppeteer.use(Stealth());
+  puppeteer.use(
     RecaptchaPlugin({
       provider: {
         id: '2captcha',
@@ -102,13 +128,18 @@ async function getTikTokProfileInfo(
         const views = viewsElement ? viewsElement.textContent : '0';
         const linkElement = element.querySelector('a');
         const link = linkElement ? linkElement.href : '';
+        const idMatch = link ? link.match(/\/video\/(\d+)/) : null;
+        const id = idMatch ? idMatch[1] : '';
+
         data.push({
+          id,
           views: parseNumber(views || '0'),
           likes: 0,
           comments: 0,
           saves: 0,
           description: '', // Placeholder for description
-          link
+          link,
+          commentsArray: [] // Placeholder for comments
         });
       });
       return data;
@@ -123,10 +154,14 @@ async function getTikTokProfileInfo(
 
         await page.waitForTimeout(3000);
 
+        await autoScrollToEnd(page);
+
         const likesSelector = 'strong[data-e2e="like-count"]';
         const commentsSelector = 'strong[data-e2e="comment-count"]';
         const savesSelector = 'strong[data-e2e="favorite-count"]';
         const descriptionSelector = 'h1[data-e2e="browse-video-desc"]';
+        const commentSelector = 'p[data-e2e="comment-level-1"]'; // Update the selector based on the actual comment text container
+        const authorSelector = 'h3[data-e2e="comment-username"]'; // Update the selector based on the actual comment author container
 
         const likes = await page.evaluate(likesSelector => {
           const parseNumber = (numberString: string): number => {
@@ -185,10 +220,30 @@ async function getTikTokProfileInfo(
           return descriptionElement ? descriptionElement.textContent || '' : '';
         }, descriptionSelector);
 
+        const commentsArray: Comment[] = await page.evaluate(
+          (commentSel, authorSel) => {
+            const commentElements = document.querySelectorAll(commentSel);
+            const comments: Comment[] = [];
+            commentElements.forEach(comment => {
+              const authorElement = comment
+                .closest('div')
+                ?.querySelector(authorSel);
+              const author = authorElement
+                ? authorElement.textContent || ''
+                : '';
+              comments.push({ author, comment: comment.textContent || '' });
+            });
+            return comments;
+          },
+          commentSelector,
+          authorSelector
+        );
+
         video.likes = likes;
         video.comments = comments;
         video.saves = saves;
         video.description = description;
+        video.commentsArray = commentsArray;
       } catch (error) {
         console.error(
           `Failed to process video ${video.link}: ${(error as Error).message}`
@@ -197,6 +252,7 @@ async function getTikTokProfileInfo(
         video.comments = 0;
         video.saves = 0;
         video.description = '';
+        video.commentsArray = [];
       } finally {
         await page.goBack();
       }
@@ -211,13 +267,13 @@ async function getTikTokProfileInfo(
   }
 }
 
-async function autoScroll(page: Page) {
+async function autoScroll(page: Page): Promise<void> {
   await page.evaluate(async () => {
     await new Promise<void>(resolve => {
-      var totalHeight = 0;
-      var distance = 100;
-      var timer = setInterval(() => {
-        var scrollHeight = document.body.scrollHeight;
+      let totalHeight = 0;
+      const distance = 100;
+      const timer = setInterval(() => {
+        const scrollHeight = document.body.scrollHeight;
         window.scrollBy(0, distance);
         totalHeight += distance;
 
