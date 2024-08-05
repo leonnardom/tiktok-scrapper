@@ -24,6 +24,7 @@ interface VideoInfo {
   likes: number;
   comments: number;
   saves: number;
+  shares: number;
   link?: string;
   description?: string;
   commentsArray?: Comment[];
@@ -60,8 +61,8 @@ async function autoScrollToEnd(page: Page): Promise<void> {
 async function getTikTokProfileInfo(
   username: string
 ): Promise<{ videos: VideoInfo[]; followers: number }> {
-  puppeteer.use(Stealth());
-  puppeteer.use(
+  await puppeteer.use(Stealth());
+  await puppeteer.use(
     RecaptchaPlugin({
       provider: {
         id: '2captcha',
@@ -137,6 +138,7 @@ async function getTikTokProfileInfo(
           likes: 0,
           comments: 0,
           saves: 0,
+          shares: 0, // Add the shares property
           description: '', // Placeholder for description
           link,
           commentsArray: [] // Placeholder for comments
@@ -159,9 +161,10 @@ async function getTikTokProfileInfo(
         const likesSelector = 'strong[data-e2e="like-count"]';
         const commentsSelector = 'strong[data-e2e="comment-count"]';
         const savesSelector = 'strong[data-e2e="favorite-count"]';
+        const sharesSelector = 'strong[data-e2e="share-count"]'; // Add the selector for shares
         const descriptionSelector = 'h1[data-e2e="browse-video-desc"]';
         const commentSelector = 'p[data-e2e="comment-level-1"]'; // Update the selector based on the actual comment text container
-        const authorSelector = 'h3[data-e2e="comment-username"]'; // Update the selector based on the actual comment author container
+        const authorSelector = 'span[data-e2e="comment-username"]'; // Update the selector based on the actual comment author container
 
         const likes = await page.evaluate(likesSelector => {
           const parseNumber = (numberString: string): number => {
@@ -214,6 +217,23 @@ async function getTikTokProfileInfo(
             : 0;
         }, savesSelector);
 
+        const shares = await page.evaluate(sharesSelector => {
+          const parseNumber = (numberString: string): number => {
+            let number = parseFloat(numberString.replace(/,/g, ''));
+            if (numberString.includes('k') || numberString.includes('K')) {
+              number *= 1000;
+            } else if (numberString.includes('M')) {
+              number *= 1000000;
+            }
+            return isNaN(number) ? 0 : Math.round(number);
+          };
+
+          const sharesElement = document.querySelector(sharesSelector);
+          return sharesElement
+            ? parseNumber(sharesElement.textContent || '0')
+            : 0;
+        }, sharesSelector);
+
         const description = await page.evaluate(descriptionSelector => {
           const descriptionElement =
             document.querySelector(descriptionSelector);
@@ -242,6 +262,7 @@ async function getTikTokProfileInfo(
         video.likes = likes;
         video.comments = comments;
         video.saves = saves;
+        video.shares = shares; // Save the shares count
         video.description = description;
         video.commentsArray = commentsArray;
       } catch (error) {
@@ -251,6 +272,7 @@ async function getTikTokProfileInfo(
         video.likes = 0;
         video.comments = 0;
         video.saves = 0;
+        video.shares = 0; // Set shares to 0 on error
         video.description = '';
         video.commentsArray = [];
       } finally {
@@ -310,14 +332,26 @@ app.post('/scrape', async (req: Request, res: Response) => {
     0
   );
 
+  const totalSaves = profileInfo.videos.reduce(
+    (acc, video) => acc + video.saves,
+    0
+  );
+
+  const totalShares = profileInfo.videos.reduce(
+    (acc, video) => acc + video.shares,
+    0
+  );
+
   res.json({
     success: true,
     data: {
       views: totalViews,
       likes: totalLikes,
       comments: totalComments,
+      saves: totalSaves,
+      shares: totalShares,
       followers: profileInfo.followers,
-      videos: profileInfo.videos // Incluindo os dados dos vídeos
+      videos: profileInfo.videos // Including video details
     }
   });
 });

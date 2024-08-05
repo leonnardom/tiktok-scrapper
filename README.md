@@ -5,10 +5,10 @@ This project is a scraper for TikTok profiles, developed with Node.js and TypeSc
 ## Features
 
 - **Profile Information Collection:** Retrieves the follower count of a TikTok profile.
-- **Video Details:** Extracts information about posted videos, including views, likes, comments, saves, and video ID.
+- **Video Details:** Extracts information about posted videos, including views, likes, comments, saves, shares, and video ID.
 - **Simulated Interaction:** Simulates user interaction with the page to avoid bot detection.
 - **Captcha Handling:** Uses the reCAPTCHA plugin to handle captchas automatically.
-- **Comments Extraction:** Retrieves comments for each video, including the author's name and comment text.
+- **Comments Extraction:** Retrieves comments for each video, including the author's name, comment text, and date.
 
 ## Requirements
 
@@ -79,16 +79,19 @@ Send a POST request to the `/scrape` endpoint with a JSON body containing the Ti
             "likes": 5000,
             "comments": 300,
             "saves": 150,
+            "shares": 50,
             "description": "Video description",
             "link": "https://www.tiktok.com/@username/video/1234567890",
             "commentsArray": [
               {
                 "author": "user1",
-                "comment": "Great video!"
+                "comment": "Great video!",
+                "date": "2024-08-01"
               },
               {
                 "author": "user2",
-                "comment": "Nice content!"
+                "comment": "Nice content!",
+                "date": "2024-08-02"
               }
             ]
           }
@@ -97,7 +100,7 @@ Send a POST request to the `/scrape` endpoint with a JSON body containing the Ti
     }
 ```
 
-The response will include the total counts of views, likes, comments, and followers for the specified TikTok profile, along with detailed information about each video, including comments.
+The response will include the total counts of views, likes, comments, saves, shares, and followers for the specified TikTok profile, along with detailed information about each video, including comments.
 
 ## Contributing
 
