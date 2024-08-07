@@ -64,7 +64,7 @@ Send a POST request to the `/scrape` endpoint with a JSON body containing the Ti
 
 ### Example Response
 
-```typescript
+```json
     {
       "success": true,
       "data": {

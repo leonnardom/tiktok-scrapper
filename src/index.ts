@@ -354,8 +354,8 @@ app.post('/scrape', async (req: Request, res: Response) => {
       videos: profileInfo.videos // Including video details
     }
   });
-});
+})
 
-app.listen(PORT, () =>
+.listen(PORT, () =>
   console.log(`\x1b[34m[PORT]\x1b[0m`, `Server is running on port ${PORT}`)
 );
