@@ -59,7 +59,8 @@ async function autoScrollToEnd(page: Page): Promise<void> {
 }
 
 async function getTikTokProfileInfo(
-  username: string
+  username: string,
+  hashtag?: string // Adicionado o parâmetro hashtag
 ): Promise<{ videos: VideoInfo[]; followers: number }> {
   await puppeteer.use(Stealth());
   await puppeteer.use(
@@ -138,10 +139,10 @@ async function getTikTokProfileInfo(
           likes: 0,
           comments: 0,
           saves: 0,
-          shares: 0, // Add the shares property
-          description: '', // Placeholder for description
+          shares: 0,
+          description: '',
           link,
-          commentsArray: [] // Placeholder for comments
+          commentsArray: []
         });
       });
       return data;
@@ -161,10 +162,10 @@ async function getTikTokProfileInfo(
         const likesSelector = 'strong[data-e2e="like-count"]';
         const commentsSelector = 'strong[data-e2e="comment-count"]';
         const savesSelector = 'strong[data-e2e="favorite-count"]';
-        const sharesSelector = 'strong[data-e2e="share-count"]'; // Add the selector for shares
+        const sharesSelector = 'strong[data-e2e="share-count"]';
         const descriptionSelector = 'h1[data-e2e="browse-video-desc"]';
-        const commentSelector = 'p[data-e2e="comment-level-1"]'; // Update the selector based on the actual comment text container
-        const authorSelector = 'span[data-e2e="comment-username"]'; // Update the selector based on the actual comment author container
+        const commentSelector = 'p[data-e2e="comment-level-1"]';
+        const authorSelector = 'span[data-e2e="comment-username"]';
 
         const likes = await page.evaluate(likesSelector => {
           const parseNumber = (numberString: string): number => {
@@ -234,11 +235,23 @@ async function getTikTokProfileInfo(
             : 0;
         }, sharesSelector);
 
-        const description = await page.evaluate(descriptionSelector => {
+        let description = await page.evaluate(descriptionSelector => {
           const descriptionElement =
             document.querySelector(descriptionSelector);
           return descriptionElement ? descriptionElement.textContent || '' : '';
         }, descriptionSelector);
+
+        // Transformar a descrição em minúsculas
+        description = description.toLowerCase();
+
+        // Verificar se a hashtag está presente na descrição
+        if (hashtag && !description.includes(hashtag.toLowerCase())) {
+          console.log(
+            `Vídeo ${video.id} ignorado por não conter a hashtag ${hashtag}`
+          );
+
+          continue; // Ignora o vídeo se a hashtag não estiver presente
+        }
 
         const commentsArray: Comment[] = await page.evaluate(
           (commentSel, authorSel) => {
@@ -262,7 +275,7 @@ async function getTikTokProfileInfo(
         video.likes = likes;
         video.comments = comments;
         video.saves = saves;
-        video.shares = shares; // Save the shares count
+        video.shares = shares;
         video.description = description;
         video.commentsArray = commentsArray;
       } catch (error) {
@@ -272,7 +285,7 @@ async function getTikTokProfileInfo(
         video.likes = 0;
         video.comments = 0;
         video.saves = 0;
-        video.shares = 0; // Set shares to 0 on error
+        video.shares = 0;
         video.description = '';
         video.commentsArray = [];
       } finally {
@@ -280,7 +293,14 @@ async function getTikTokProfileInfo(
       }
     }
 
-    return { videos: videoData, followers };
+    // Filtrar os vídeos pela hashtag (se informada)
+    const filteredVideos = hashtag
+      ? videoData.filter(video =>
+          video.description?.toLowerCase().includes(hashtag.toLowerCase())
+        )
+      : videoData;
+
+    return { videos: filteredVideos, followers };
   } catch (error) {
     console.error('Error in getTikTokProfileInfo:', error);
     return { videos: [], followers: 0 };
@@ -311,11 +331,14 @@ async function autoScroll(page: Page): Promise<void> {
 app.post('/scrape', async (req: Request, res: Response) => {
   console.log(`\x1b[34m[SCRAPPER]\x1b[0m`, `Starting Scrapper.`);
 
-  const { url } = req.body;
+  const { url, hashtag } = req.body; 
 
-  console.log(`\x1b[34m[NEW POST]\x1b[0m`, `New Post using URL: ${url}`);
-
-  const profileInfo = await getTikTokProfileInfo(url);
+  console.log(
+    `\x1b[34m[NEW POST]\x1b[0m`,
+    `New Post using URL: ${url}${hashtag ? ` and Hashtag: ${hashtag}` : ''}`
+  );
+  
+  const profileInfo = await getTikTokProfileInfo(url, hashtag); 
 
   const totalViews = profileInfo.videos.reduce(
     (acc, video) => acc + video.views,
@@ -351,11 +374,11 @@ app.post('/scrape', async (req: Request, res: Response) => {
       saves: totalSaves,
       shares: totalShares,
       followers: profileInfo.followers,
-      videos: profileInfo.videos // Including video details
+      videos: profileInfo.videos // Inclui apenas os vídeos filtrados pela hashtag
     }
   });
-})
+});
 
-.listen(PORT, () =>
+app.listen(PORT, () =>
   console.log(`\x1b[34m[PORT]\x1b[0m`, `Server is running on port ${PORT}`)
 );
