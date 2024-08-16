@@ -54,26 +54,28 @@ API Usage
 
 Send a POST request to the `/scrape` endpoint with a JSON body containing the TikTok profile URL you want to collect information from:
 
+```json
     {
       "url": "username",
       "hashtag": "#example"  
     }
-    
+```
 
 ### Example Request
 
     POST http://localhost:3000/scrape
     Content-Type: application/json
     
-
+```json
     {
       "url": "username",
       "hashtag": "#example"
     }
-    
+```
 
 ### Example Response
 
+```json
     {
       "success": true,
       "data": {
@@ -107,7 +109,7 @@ Send a POST request to the `/scrape` endpoint with a JSON body containing the Ti
         ]
       }
     }
-    
+```
 
 The response will include the total counts of views, likes, comments, saves, shares, and followers for the specified TikTok profile, along with detailed information about each video, including comments. If a hashtag is specified, only videos containing that hashtag in the description will be included.
 
