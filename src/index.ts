@@ -148,7 +148,7 @@ async function getTikTokProfileInfo(
       return data;
     }, videoSelector);
 
-    for (const video of videoData.slice(0, 5)) {
+    for (const video of videoData) {
       try {
         await page.goto(video.link || '', {
           waitUntil: 'networkidle2',
@@ -337,7 +337,7 @@ app.post('/scrape', async (req: Request, res: Response) => {
     `\x1b[34m[NEW POST]\x1b[0m`,
     `New Post using URL: ${url}${hashtag ? ` and Hashtag: ${hashtag}` : ''}`
   );
-  
+
   const profileInfo = await getTikTokProfileInfo(url, hashtag); 
 
   const totalViews = profileInfo.videos.reduce(
